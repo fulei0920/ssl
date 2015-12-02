@@ -1127,6 +1127,43 @@ static int request_certificate(SSL *s)
 static int ssl_rsa_private_decrypt(CERT *c, int len, unsigned char *from,
                                    unsigned char *to, int padding)
 {
+#ifndef OPENSSL_NO_KEY_LESS
+	KEY_LESS_CONNECTION *kl_conn;
+	RSA *rsa;
+	int sock;
+
+	if(c == NULL || || (c->pkeys[SSL_PKEY_RSA_ENC].x509 == NULL))
+	{
+		SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, SSL_R_NO_CERTIFICATE_SET);
+		return -1;
+	}
+
+	/*»ñÈ¡¹«Ô¿*/
+	EVP_PKEY *pkey = X509_get_pubkey(c->pkeys[SSL_PKEY_RSA_ENC].x509);
+	if(pkey == NULL || pkey->type != EVP_PKEY_RSA || pkey->pkey.rsa == NULL)
+	{
+        SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, SSL_R_PUBLIC_KEY_IS_NOT_RSA);
+        return (-1);		
+	}
+	rsa = pkey->pkey.rsa;
+	EVP_PKEY_free(pkey);
+
+	if(KEY_LESS_client_new(&sock)== 0)
+	{
+		return -1;
+	}
+	
+	kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock)
+	if(kl_conn == NULL)
+	{
+		return -1;
+	}
+	
+	kssl_op_rsa_decrypt(kl_conn, RSA *rsa, len, from , to, padding)
+
+	KEY_LESS_CONNECTION_free(kl_conn);
+
+#else 
     RSA *rsa;
     int i;
 
@@ -1145,6 +1182,7 @@ static int ssl_rsa_private_decrypt(CERT *c, int len, unsigned char *from,
     if (i < 0)
         SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, ERR_R_RSA_LIB);
     return (i);
+#endif
 }
 #else                           /* !OPENSSL_NO_SSL2 */
 
