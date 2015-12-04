@@ -187,37 +187,7 @@ err:
 }
 
 
-void kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, unsigned char *from , unsigned char *to, int padding)
-{
-	kssl_operation req, resp;
-	kssl_header *h;
-	kssl_header decrypt;
-	
-	decrypt.version_maj = KSSL_VERSION_MAJ;
-	decrypt.id = 0x1234567a;
-	
-	zero_operation(&req);
-	req.is_opcode_set = 1;
-	req.is_payload_set = 1;
-	req.is_digest_set = 1;
-	//req.is_ip_set = 1;
-	//req.ip = ipv6;
-	//req.ip_len = 16;
-	req.playload = malloc(len);
-	req.playload_len = len;
-	req.digest = malloc(KSSL_DIGEST_SIZE);
-	
-	digest_public_rsa(rsa_pubkey, req.digest);
-	req.opcode = KSSL_OP_RSA_DECRYPT;
-	
-	h = kssl(kl_conn->ssl, &decrypt, &req);
-	parse_message_payload(h->data, h->length, &resp);
-	memcpy(to, resp.playload, resp.playload_len);
-	ok(h);
-	
-	free(req.payload);
-	free(req.digest);
-}
+
 
 
 // kssl: send a KSSL message to the server and read the response
