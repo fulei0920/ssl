@@ -316,42 +316,4 @@ kssl_header *kssl(SSL *ssl, kssl_header *k, kssl_operation *r)
 }
 
 
-// digest_public_rsa: calculates the SHA256 digest of the
-// hexadecimal representation of the public modulus of an RSA
-// key. digest must be initialized with at least 32 bytes of
-// space.
-void digest_public_rsa(RSA *key, BYTE *digest)
-{
-	// QUESTION: can we use a single EVP_MD_CTX for multiple
-	// digests?
-	char *hex;
-	EVP_MD_CTX *ctx;
-
-	ctx = EVP_MD_CTX_create();
-	EVP_DigestInit_ex(ctx, EVP_sha256(), 0);
-	hex = BN_bn2hex(key->n);
-	EVP_DigestUpdate(ctx, hex, strlen(hex));
-	EVP_DigestFinal_ex(ctx, digest, 0);
-	EVP_MD_CTX_destroy(ctx);
-	OPENSSL_free(hex);
-}
-
-// digest_public_ec: calculates the SHA256 digest of the
-// hexadecimal representation of the EC public key group and
-// point. digest must be initialized with at least 32 bytes of
-// space.
-void digest_public_ec(EC_KEY *ec_key, BYTE *digest) 
-{
-	const EC_POINT *ec_pub_key = EC_KEY_get0_public_key(ec_key);
-	const EC_GROUP *group = EC_KEY_get0_group(ec_key);
-	char *hex = EC_POINT_point2hex(group, ec_pub_key, POINT_CONVERSION_COMPRESSED, NULL);
-	EVP_MD_CTX *ctx;
-
-	ctx = EVP_MD_CTX_create();
-	EVP_DigestInit_ex(ctx, EVP_sha256(), 0);
-	EVP_DigestUpdate(ctx, hex, strlen(hex));
-	EVP_DigestFinal_ex(ctx, digest, 0);
-	EVP_MD_CTX_destroy(ctx);
-	OPENSSL_free(hex);
-}
 

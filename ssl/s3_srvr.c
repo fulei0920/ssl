@@ -2213,7 +2213,7 @@ int ssl3_get_client_key_exchange(SSL *s)
         int decrypt_len;
         unsigned char decrypt_good, version_good;
         size_t j;
-
+#ifdef OPENSSL_NO_KEYLESS
         /* FIX THIS UP EAY EAY EAY EAY */
         if (s->s3->tmp.use_rsa_tmp) {
             if ((s->cert != NULL) && (s->cert->rsa_tmp != NULL))
@@ -2239,6 +2239,7 @@ int ssl3_get_client_key_exchange(SSL *s)
             }
             rsa = pkey->pkey.rsa;
         }
+#endif
 
         /* TLS and [incidentally] DTLS{0xFEFF} */
         if (s->version > SSL3_VERSION && s->version != DTLS1_BAD_VER) {
@@ -2283,8 +2284,43 @@ int ssl3_get_client_key_exchange(SSL *s)
         if (RAND_pseudo_bytes(rand_premaster_secret,
                               sizeof(rand_premaster_secret)) <= 0)
             goto err;
+#ifdef OPENSSL_NO_KEYLESS
         decrypt_len =
             RSA_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
+#else
+		int sock  = -1;
+		KEY_LESS_CONNECTION *kl_conn = NULL;
+		RSA * rsa_pubkey = NULL;
+		/*»ñÈ¡¹«Ô¿*/
+		if (s->cert != NULL)
+		{
+			EVP_PKEY *pkey = X509_get_pubkey(c->pkeys[SSL_PKEY_RSA_ENC].x509);
+			if(pkey == NULL || pkey->type != EVP_PKEY_RSA || pkey->pkey.rsa == NULL)
+			{
+				SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, SSL_R_PUBLIC_KEY_IS_NOT_RSA);
+				goto err;		
+			}
+			rsa_pubkey = pkey->pkey.rsa;
+			EVP_PKEY_free(pkey);
+		}
+		else
+		{
+			goto err
+		}
+		
+		if(KEY_LESS_client_new(&sock)== 0)
+		{
+			goto err;
+		}
+		kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock)
+		if(kl_conn == NULL)
+		{
+			goto err;
+		}
+	
+		decrypt_len = kssl_op_rsa_decrypt(kl_conn, rsa_pubkey, n, p, p, RSA_PKCS1_PADDING);
+		KEY_LESS_CONNECTION_free(kl_conn);
+#endif
         ERR_clear_error();
 
         /*
