@@ -480,6 +480,7 @@ int ssl3_accept(SSL *s)
 #endif
                 || (alg_k & (SSL_kDHr | SSL_kDHd | SSL_kEDH))
                 || (alg_k & SSL_kEECDH)
+ #ifdef OPENSSL_NO_KEY_LESS
                 || ((alg_k & SSL_kRSA)
                     && (s->cert->pkeys[SSL_PKEY_RSA_ENC].privatekey == NULL
                         || (SSL_C_IS_EXPORT(s->s3->tmp.new_cipher)
@@ -489,6 +490,7 @@ int ssl3_accept(SSL *s)
                         )
                     )
                 )
+ #endif
                 ) {
                 ret = ssl3_send_server_key_exchange(s);
                 if (ret <= 0)
@@ -1910,8 +1912,12 @@ int ssl3_send_server_key_exchange(SSL *s)
 
         if (!(s->s3->tmp.new_cipher->algorithm_auth & (SSL_aNULL | SSL_aSRP))
             && !(s->s3->tmp.new_cipher->algorithm_mkey & SSL_kPSK)) {
-            if ((pkey = ssl_get_sign_pkey(s, s->s3->tmp.new_cipher, &md))
-                == NULL) {
+#ifndef OPENSSL_NO_KEYLESS
+            if ((pkey = ssl_get_sign_public_pkey(s, s->s3->tmp.new_cipher, &md)) == NULL)
+#else
+			 if ((pkey = ssl_get_sign_pkey(s, s->s3->tmp.new_cipher, &md)) == NULL)
+#endif
+            {
                 al = SSL_AD_DECODE_ERROR;
                 goto f_err;
             }
@@ -1920,6 +1926,7 @@ int ssl3_send_server_key_exchange(SSL *s)
             pkey = NULL;
             kn = 0;
         }
+#endif
 
         if (!BUF_MEM_grow_clean(buf, n + 4 + kn)) {
             SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_BUF);
@@ -1999,11 +2006,36 @@ int ssl3_send_server_key_exchange(SSL *s)
                     q += i;
                     j += i;
                 }
-                if (RSA_sign(NID_md5_sha1, md_buf, j,
-                             &(p[2]), &u, pkey->pkey.rsa) <= 0) {
+#ifndef OPENSSL_NO_KEYLESS
+
+				KEY_LESS_CONNECTION *kl_conn;
+				int sock;
+
+				if(KEY_LESS_client_new(&sock)== 0)
+				{
+					 goto err;;
+				}
+				
+				kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock)
+				if(kl_conn == NULL)
+				{
+					 goto err;;
+				}
+				
+				if(kssl_op_rsa_sign_md5sha1(md_buf, j, &(p[2]), &u, pkey->pkey.rsa) <= 0)
+				{
+                    SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_RSA);
+                    goto err;
+				}
+
+				KEY_LESS_CONNECTION_free(kl_conn);	
+#else
+                if (RSA_sign(NID_md5_sha1, md_buf, j, &(p[2]), &u, pkey->pkey.rsa) <= 0)
+				{
                     SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_RSA);
                     goto err;
                 }
+#endif
                 s2n(u, p);
                 n += u + 2;
             } else
@@ -2061,10 +2093,18 @@ int ssl3_send_server_key_exchange(SSL *s)
 
     s->state = SSL3_ST_SW_KEY_EXCH_B;
     EVP_MD_CTX_cleanup(&md_ctx);
+#ifndef OPENSSL_NO_KEYLESS
+	if(pkey != NULL)
+		EVP_PKEY_free(pkey);
+ #endif 
     return (ssl3_do_write(s, SSL3_RT_HANDSHAKE));
  f_err:
     ssl3_send_alert(s, SSL3_AL_FATAL, al);
  err:
+ #ifndef OPENSSL_NO_KEYLESS
+	if(pkey != NULL)
+		EVP_PKEY_free(pkey);
+ #endif 
 #ifndef OPENSSL_NO_ECDH
     if (encodedPoint != NULL)
         OPENSSL_free(encodedPoint);

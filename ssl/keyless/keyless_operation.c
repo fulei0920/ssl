@@ -9,6 +9,8 @@ static void digest_public_rsa(RSA *key, BYTE *digest);
 static void digest_public_ec(EC_KEY *ec_key, BYTE *digest);
 static kssl_header *kssl(SSL *ssl, kssl_header *k, kssl_operation *r);
 
+static unsigned char ipv6[16] = {0x0, 0xf2, 0x13, 0x48, 0x43, 0x01};
+static unsigned char ipv4[4] = {127, 0, 0, 1};
 
 
 int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, unsigned char *from , unsigned char *to, int padding)
@@ -27,7 +29,7 @@ int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, 
 	//req.is_ip_set = 1;
 	//req.ip = ipv6;
 	//req.ip_len = 16;
-	req.playload = OPENSSL_malloc(len);
+	req.playload = from;
 	req.playload_len = len;
 	req.digest = OPENSSL_malloc(KSSL_DIGEST_SIZE);
 	
@@ -37,23 +39,78 @@ int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, 
 	h = kssl(kl_conn->ssl, &decrypt, &req);
 	if(h == NULL)
 	{
+		OPENSSL_free(req.digest);
 		return 0;
 	}
 
 	if(parse_message_payload(h->data, h->length, &resp) != KSSL_ERROR_NONE)
 	{
+		OPENSSL_free(req.digest);
 		OPENSSL_free(h->data);
 		OPENSSL_free(h);
+		return 0;
 	}
 	
 	memcpy(to, resp.playload, resp.playload_len);
 
-	OPENSSL_free(req.payload);
 	OPENSSL_free(req.digest);
+	OPENSSL_free(h->data);
+	OPENSSL_free(h);
 	
 	return resp.playlaod_len;
 }
 
+
+int kssl_op_rsa_sign_md5sha1(KEY_LESS_CONNECTION *kl_conn, const unsigned char *m, unsigned int m_len,
+             unsigned char *sigret, unsigned int *siglen, RSA *rsa_pubkey)
+{
+	int i, rc, len;
+	kssl_header *h;
+
+	kssl_header sign;
+	kssl_operation req, resp;
+
+	sign.version_maj = KSSL_VERSION_MAJ;
+	sign.id = 0x1234567a;
+	zero_operation(&req);
+	req.is_opcode_set = 1;
+	req.is_payload_set = 1;
+	req.is_digest_set = 1;
+	//req.is_ip_set = 1;
+	//req.ip = ipv4;
+	//req.ip_len = 4;
+	req.digest = OPENSSL_malloc(KSSL_DIGEST_SIZE);
+	digest_public_rsa(rsa_pubkey, req.digest);
+	req.payload = m;
+	req.payload_len = m_len;
+	req.opcode = KSSL_OP_RSA_SIGN_MD5SHA1;
+
+	h = kssl(c->ssl, &sign, &req);
+	if(h == NULL)
+	{
+		OPENSSL_free(req.digest);
+		return 0;
+	}
+
+	if(parse_message_payload(h->data, h->length, &resp) != KSSL_ERROR_NONE)
+	{
+		OPENSSL_free(req.digest);
+		OPENSSL_free(h->data);
+		OPENSSL_free(h);
+		return 0;
+
+	}
+
+	
+	memcpy(sigret, resp.playload, resp.payload_len);
+	*siglen = resp.payload_len;
+	
+	OPENSSL_free(req.digest);
+	OPENSSL_free(h->data);
+	OPENSSL_free(h);
+
+	return *siglen;
+}
 
 // kssl: send a KSSL message to the server and read the response
 static kssl_header *kssl(SSL *ssl, kssl_header *k, kssl_operation *r)

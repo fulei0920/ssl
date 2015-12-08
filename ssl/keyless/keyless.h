@@ -29,6 +29,6 @@ void KEY_LESS_CONNECTION_free(KEY_LESS_CONNECTION *kl_conn);
 int KEY_LESS_client_new(int *sock);
 
 
-void kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, unsigned char *from , unsigned char *to, int padding);
-
+int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, unsigned char *from , unsigned char *to, int padding);
+int kssl_op_rsa_sign_md5sha1(KEY_LESS_CONNECTION *kl_conn, const unsigned char *m, unsigned int m_len, unsigned char *sigret, unsigned int *siglen, RSA *rsa_pubkey);
 #endif
