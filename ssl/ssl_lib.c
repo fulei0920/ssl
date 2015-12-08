@@ -2408,6 +2408,7 @@ EVP_PKEY *ssl_get_sign_pkey(SSL *s, const SSL_CIPHER *cipher,
     return c->pkeys[idx].privatekey;
 }
 
+#ifndef OPENSSL_NO_KEYLESS
 EVP_PKEY *ssl_get_sign_public_pkey(SSL *s, const SSL_CIPHER *cipher,
                             const EVP_MD **pmd)
 {
@@ -2446,6 +2447,8 @@ EVP_PKEY *ssl_get_sign_public_pkey(SSL *s, const SSL_CIPHER *cipher,
         *pmd = c->pkeys[idx].digest;
     return pkey;
 }
+
+#endif
 
 void ssl_update_cache(SSL *s, int mode)
 {
