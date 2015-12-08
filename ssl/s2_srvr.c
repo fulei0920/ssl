@@ -118,7 +118,7 @@
 # include <openssl/objects.h>
 # include <openssl/evp.h>
 #include "keyless/keyless.h"
-#include "keyless/keyless_operation.h"
+
 
 
 static const SSL_METHOD *ssl2_get_server_method(int ver);
@@ -1162,7 +1162,7 @@ static int ssl_rsa_private_decrypt(CERT *c, int len, unsigned char *from,
 		return -1;
 	}
 	
-	kssl_op_rsa_decrypt(kl_conn, RSA *rsa, len, from , to, padding)
+	kssl_op_rsa_decrypt(kl_conn, rsa, len, from , to, padding)
 
 	KEY_LESS_CONNECTION_free(kl_conn);
 

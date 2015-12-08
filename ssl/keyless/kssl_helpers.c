@@ -19,7 +19,7 @@
 #include <unistd.h>
 #endif
 
-#include "kssl_log.h"
+//#include "kssl_log.h"
 
 // Helper macros for stream processing. These macros ensure that the correct
 // byte ordering is used.
@@ -303,11 +303,12 @@ kssl_error_code flatten_operation(kssl_header *header, kssl_operation *operation
   // KSSL_ITEM at the end of the message stating that it has N bytes of
   // padding. 
 
-  local_req = (BYTE *)calloc(local_req_len, 1);
+  local_req = (BYTE *)OPENSSL_malloc(local_req_len, 1);
   if (local_req == NULL) 
   {
 	return KSSL_ERROR_INTERNAL;
   }
+  memst(local_req, 0, local_req_len);
 
   // Override header length
   header->length = local_req_len - KSSL_HEADER_SIZE;
@@ -345,20 +346,21 @@ kssl_error_code flatten_operation(kssl_header *header, kssl_operation *operation
 // zero_operation: initialize a kssl_operation struct
 void zero_operation(kssl_operation *operation) 
 {
-  if (operation != NULL) {
-    operation->is_opcode_set = 0;
-    operation->opcode = 0;
-    operation->is_ski_set = 0;
-    operation->ski = NULL;
-    operation->is_digest_set = 0;
-    operation->digest = NULL;
-    operation->is_payload_set = 0;
-    operation->payload = NULL;
-    operation->payload_len = 0;
-    operation->is_ip_set = 0;
-    operation->ip = NULL;
-    operation->ip_len = 0;
-  }
+	if (operation != NULL) 
+	{
+		operation->is_opcode_set = 0;
+		operation->opcode = 0;
+		operation->is_ski_set = 0;
+		operation->ski = NULL;
+		operation->is_digest_set = 0;
+		operation->digest = NULL;
+		operation->is_payload_set = 0;
+		operation->payload = NULL;
+		operation->payload_len = 0;
+		operation->is_ip_set = 0;
+		operation->ip = NULL;
+		operation->ip_len = 0;
+	}
 }
 
 // parse_message_payload: parse a message payload into a
@@ -518,7 +520,8 @@ const char *errstring(BYTE err) {
   return "UNKNOWN";
 }
 
-static void print_ip(kssl_operation *op, char *ip_string) {
+static void print_ip(kssl_operation *op, char *ip_string)
+{
   if (op == NULL) return;
   if (op->is_ip_set) {
     // IPv4 printing
@@ -536,7 +539,8 @@ static void print_ip(kssl_operation *op, char *ip_string) {
 }
 
 // log_operation: write out a KSSL operation to the log
-void log_operation(kssl_header *header, kssl_operation *op) {
+void log_operation(kssl_header *header, kssl_operation *op) 
+{
   char ip_string[INET6_ADDRSTRLEN] = {0};
 
   // The \n at the end of the ctime return is chopped off here.
@@ -558,7 +562,8 @@ void log_operation(kssl_header *header, kssl_operation *op) {
 }
 
 // log_error: log an error of the operation
-void log_error(DWORD id, BYTE code) {
+void log_error(DWORD id, BYTE code)
+{
   time_t now = time(NULL); 
   char nowstring[32]; // ctime_r documentation says there must be
                       // room here for 26 bytes.
