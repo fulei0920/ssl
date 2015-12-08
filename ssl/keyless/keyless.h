@@ -1,7 +1,8 @@
 #ifndef __KEYLESS_H__
 #define __KEYLESS_H__
 
-# include <openssl/ossl_typ.h>
+#include <openssl/ossl_typ.h>
+#include "kssl.h"
 
 typedef struct
 {
@@ -28,7 +29,7 @@ int KEY_LESS_CONNECTION_init(KEY_LESS_CONNECTION* kl_conn, KEY_LESS_CTX *kl_ctx,
 void KEY_LESS_CONNECTION_free(KEY_LESS_CONNECTION *kl_conn);
 int KEY_LESS_client_new(int *sock);
 void kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, unsigned char *from , unsigned char *to, int padding);
-kssl_header *kssl(SSL *ssl, kssl_header *k, kssl_operation *r)
+kssl_header *kssl(SSL *ssl, kssl_header *k, kssl_operation *r);
 void digest_public_rsa(RSA *key, BYTE *digest);
 void digest_public_ec(EC_KEY *ec_key, BYTE *digest); 
 
