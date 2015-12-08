@@ -117,6 +117,9 @@
 # include <openssl/rand.h>
 # include <openssl/objects.h>
 # include <openssl/evp.h>
+#include "keyless/keyless.h"
+#include "keyless/keyless_operation.h"
+
 
 static const SSL_METHOD *ssl2_get_server_method(int ver);
 static int get_client_master_key(SSL *s);
