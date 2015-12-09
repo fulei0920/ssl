@@ -10,6 +10,7 @@
 
 #include "kssl.h"
 #include "kssl_helpers.h"
+#include <openssl/crypto.h>
 
 #if PLATFORM_WINDOWS
 #include <ws2tcpip.h>
@@ -303,12 +304,12 @@ kssl_error_code flatten_operation(kssl_header *header, kssl_operation *operation
   // KSSL_ITEM at the end of the message stating that it has N bytes of
   // padding. 
 
-  local_req = (BYTE *)OPENSSL_malloc(local_req_len, 1);
+  local_req = (BYTE *)OPENSSL_malloc(local_req_len);
   if (local_req == NULL) 
   {
 	return KSSL_ERROR_INTERNAL;
   }
-  memst(local_req, 0, local_req_len);
+  memset(local_req, 0, local_req_len);
 
   // Override header length
   header->length = local_req_len - KSSL_HEADER_SIZE;
@@ -556,9 +557,9 @@ void log_operation(kssl_header *header, kssl_operation *op)
 
   print_ip(op, ip_string);
   
-  write_log(0, "version:%d.%d, id:%d, op:%s, ip <%s>, time %s",
-    header->version_maj, header->version_min, header->id,
-    opstring(op->opcode), ip_string, nowstring);
+  //write_log(0, "version:%d.%d, id:%d, op:%s, ip <%s>, time %s",
+  //header->version_maj, header->version_min, header->id,
+  // opstring(op->opcode), ip_string, nowstring);
 }
 
 // log_error: log an error of the operation
@@ -569,7 +570,7 @@ void log_error(DWORD id, BYTE code)
                       // room here for 26 bytes.
   ctime_r(&now, &nowstring[0]);
 
-  write_log(1, "id:%d, error:%s, time:%s",
-    id, errstring(code), nowstring);
+  //write_log(1, "id:%d, error:%s, time:%s",
+  //id, errstring(code), nowstring);
 }
 

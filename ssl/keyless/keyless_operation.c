@@ -1,8 +1,11 @@
 //#include "crypto.h"
 #include "ossl_typ.h"
+#include <openssl/ssl.h>
+#include <openssl/rsa.h>
+#include <openssl/ec.h>
 #include "keyless.h"
 #include "kssl.h"
-#include "kssl_helper.h"
+#include "kssl_helpers.h"
 
 
 static void digest_public_rsa(RSA *key, BYTE *digest);
@@ -29,8 +32,8 @@ int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, 
 	//req.is_ip_set = 1;
 	//req.ip = ipv6;
 	//req.ip_len = 16;
-	req.playload = from;
-	req.playload_len = len;
+	req.payload = from;
+	req.payload_len = len;
 	req.digest = OPENSSL_malloc(KSSL_DIGEST_SIZE);
 	
 	digest_public_rsa(rsa_pubkey, req.digest);
@@ -51,13 +54,13 @@ int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, 
 		return 0;
 	}
 	
-	memcpy(to, resp.playload, resp.playload_len);
+	memcpy(to, resp.payload, resp.payload_len);
 
 	OPENSSL_free(req.digest);
 	OPENSSL_free(h->data);
 	OPENSSL_free(h);
 	
-	return resp.playlaod_len;
+	return resp.payload_len;
 }
 
 
@@ -85,7 +88,7 @@ int kssl_op_rsa_sign_md5sha1(KEY_LESS_CONNECTION *kl_conn, const unsigned char *
 	req.payload_len = m_len;
 	req.opcode = KSSL_OP_RSA_SIGN_MD5SHA1;
 
-	h = kssl(c->ssl, &sign, &req);
+	h = kssl(kl_conn->ssl, &sign, &req);
 	if(h == NULL)
 	{
 		OPENSSL_free(req.digest);
@@ -102,7 +105,7 @@ int kssl_op_rsa_sign_md5sha1(KEY_LESS_CONNECTION *kl_conn, const unsigned char *
 	}
 
 	
-	memcpy(sigret, resp.playload, resp.payload_len);
+	memcpy(sigret, resp.payload, resp.payload_len);
 	*siglen = resp.payload_len;
 	
 	OPENSSL_free(req.digest);

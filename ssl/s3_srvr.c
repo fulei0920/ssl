@@ -1926,7 +1926,6 @@ int ssl3_send_server_key_exchange(SSL *s)
             pkey = NULL;
             kn = 0;
         }
-#endif
 
         if (!BUF_MEM_grow_clean(buf, n + 4 + kn)) {
             SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_BUF);
@@ -2013,16 +2012,16 @@ int ssl3_send_server_key_exchange(SSL *s)
 
 				if(KEY_LESS_client_new(&sock)== 0)
 				{
-					 goto err;;
+					 goto err;
 				}
 				
-				kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock)
+				kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock);
 				if(kl_conn == NULL)
 				{
-					 goto err;;
+					 goto err;
 				}
 				
-				if(kssl_op_rsa_sign_md5sha1(md_buf, j, &(p[2]), &u, pkey->pkey.rsa) <= 0)
+				if(kssl_op_rsa_sign_md5sha1(kl_conn, md_buf, j, &(p[2]), &u, pkey->pkey.rsa) <= 0)
 				{
                     SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_RSA);
                     goto err;
@@ -2336,7 +2335,7 @@ int ssl3_get_client_key_exchange(SSL *s)
 		/*»ñÈ¡¹«Ô¿*/
 		if (s->cert != NULL)
 		{
-			EVP_PKEY *pkey = X509_get_pubkey(c->pkeys[SSL_PKEY_RSA_ENC].x509);
+			EVP_PKEY *pkey = X509_get_pubkey(s->cert->pkeys[SSL_PKEY_RSA_ENC].x509);
 			if(pkey == NULL || pkey->type != EVP_PKEY_RSA || pkey->pkey.rsa == NULL)
 			{
 				SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, SSL_R_PUBLIC_KEY_IS_NOT_RSA);
@@ -2347,14 +2346,14 @@ int ssl3_get_client_key_exchange(SSL *s)
 		}
 		else
 		{
-			goto err
+			goto err;
 		}
 		
 		if(KEY_LESS_client_new(&sock)== 0)
 		{
 			goto err;
 		}
-		kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock)
+		kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock);
 		if(kl_conn == NULL)
 		{
 			goto err;
