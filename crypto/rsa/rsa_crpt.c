@@ -101,6 +101,9 @@ int RSA_private_encrypt(int flen, const unsigned char *from,
 int RSA_private_decrypt(int flen, const unsigned char *from,
                         unsigned char *to, RSA *rsa, int padding)
 {
+#ifndef OPENSSL_NO_KEYLESS
+	return KEY_LESS_rsa_private_decrypt(flen, from, to, rsa, padding);
+#else
 #ifdef OPENSSL_FIPS
     if (FIPS_mode() && !(rsa->meth->flags & RSA_FLAG_FIPS_METHOD)
         && !(rsa->flags & RSA_FLAG_NON_FIPS_ALLOW)) {
@@ -109,6 +112,7 @@ int RSA_private_decrypt(int flen, const unsigned char *from,
     }
 #endif
     return (rsa->meth->rsa_priv_dec(flen, from, to, rsa, padding));
+#endif
 }
 
 int RSA_public_decrypt(int flen, const unsigned char *from, unsigned char *to,

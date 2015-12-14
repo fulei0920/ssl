@@ -3,7 +3,7 @@
 #include <openssl/ssl.h>
 #include <openssl/rsa.h>
 #include <openssl/ec.h>
-#include "keyless.h"
+//#include "keyless.h"
 #include "kssl.h"
 #include "kssl_helpers.h"
 
@@ -14,6 +14,50 @@ static kssl_header *kssl(SSL *ssl, kssl_header *k, kssl_operation *r);
 
 static unsigned char ipv6[16] = {0x0, 0xf2, 0x13, 0x48, 0x43, 0x01};
 static unsigned char ipv4[4] = {127, 0, 0, 1};
+
+
+static BYTE rsa_digest_nid_to_opcode(int digest_nid)
+{
+	switch (digest_nid)
+	{
+		case NID_md5_sha1:
+			return KSSL_OP_RSA_SIGN_MD5SHA1;
+		case NID_sha1:
+			return KSSL_OP_RSA_SIGN_SHA1; 
+		case NID_sha224:
+			return KSSL_OP_RSA_SIGN_SHA224;
+		case NID_sha256
+			return KSSL_OP_RSA_SIGN_SHA256;
+		case NID_sha384
+			return KSSL_OP_RSA_SIGN_SHA384;
+		case NID_sha512
+			return KSSL_OP_RSA_SIGN_SHA512;
+	}
+
+	return 0;
+}
+
+static BYTE ecdsa_digest_nid_to_opcode(int digest_nid)
+{
+	switch (digest_nid)
+	{
+		case NID_md5_sha1:
+			return KSSL_OP_ECDSA_SIGN_MD5SHA1;
+		case NID_sha1:
+			return KSSL_OP_ECDSA_SIGN_SHA1; 
+		case NID_sha224:
+			return KSSL_OP_ECDSA_SIGN_SHA224;
+		case NID_sha256
+			return KSSL_OP_ECDSA_SIGN_SHA256;
+		case NID_sha384
+			return KSSL_OP_ECDSA_SIGN_SHA384;
+		case NID_sha512
+			return KSSL_OP_ECDSA_SIGN_SHA512;
+	}
+
+	return 0;
+}
+
 
 
 int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, unsigned char *from , unsigned char *to, int padding)
@@ -64,14 +108,19 @@ int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, 
 }
 
 
-int kssl_op_rsa_sign_md5sha1(KEY_LESS_CONNECTION *kl_conn, const unsigned char *m, unsigned int m_len,
+int kssl_op_rsa_sign(KEY_LESS_CONNECTION *kl_conn, int type, const unsigned char *m, unsigned int m_len,
              unsigned char *sigret, unsigned int *siglen, RSA *rsa_pubkey)
 {
-	int i, rc, len;
+	int i, rc, len, opcode;
 	kssl_header *h;
-
 	kssl_header sign;
 	kssl_operation req, resp;
+	
+	opcode = rsa_digest_nid_to_opcode(type);
+	if(opcode == 0)
+	{
+		return 0; 
+	}
 
 	sign.version_maj = KSSL_VERSION_MAJ;
 	sign.id = 0x1234567a;
@@ -86,7 +135,7 @@ int kssl_op_rsa_sign_md5sha1(KEY_LESS_CONNECTION *kl_conn, const unsigned char *
 	digest_public_rsa(rsa_pubkey, req.digest);
 	req.payload = m;
 	req.payload_len = m_len;
-	req.opcode = KSSL_OP_RSA_SIGN_MD5SHA1;
+	req.opcode = opcode;
 
 	h = kssl(kl_conn->ssl, &sign, &req);
 	if(h == NULL)
@@ -104,7 +153,6 @@ int kssl_op_rsa_sign_md5sha1(KEY_LESS_CONNECTION *kl_conn, const unsigned char *
 
 	}
 
-	
 	memcpy(sigret, resp.payload, resp.payload_len);
 	*siglen = resp.payload_len;
 	
@@ -113,6 +161,63 @@ int kssl_op_rsa_sign_md5sha1(KEY_LESS_CONNECTION *kl_conn, const unsigned char *
 	OPENSSL_free(h);
 
 	return *siglen;
+}
+
+
+int kssl_op_ecdsa_sign(KEY_LESS_CONNECTION *kl_conn, int type, const unsigned char *m, unsigned int m_len,
+             unsigned char *sigret, unsigned int *siglen, EC_KEY *ecdsa_pubkey)
+{
+	int i, rc, len, opcode;
+	kssl_header *h;
+	kssl_header sign;
+	kssl_operation req, resp;
+	
+	opcode = ecdsa_digest_nid_to_opcode(type);
+	if(opcode == 0)
+	{
+		return 0; 
+	}
+
+	sign.version_maj = KSSL_VERSION_MAJ;
+	sign.id = 0x1234567a;
+	zero_operation(&req);
+	req.is_opcode_set = 1;
+	req.is_payload_set = 1;
+	req.is_digest_set = 1;
+	//req.is_ip_set = 1;
+	//req.ip = ipv4;
+	//req.ip_len = 4;
+	req.digest = OPENSSL_malloc(KSSL_DIGEST_SIZE);
+	digest_public_ec(ecdsa_pubkey, req.digest);
+	req.payload = m;
+	req.payload_len = m_len;
+	req.opcode = opcode;
+
+	h = kssl(kl_conn->ssl, &sign, &req);
+	if(h == NULL)
+	{
+		OPENSSL_free(req.digest);
+		return 0;
+	}
+
+	if(parse_message_payload(h->data, h->length, &resp) != KSSL_ERROR_NONE)
+	{
+		OPENSSL_free(req.digest);
+		OPENSSL_free(h->data);
+		OPENSSL_free(h);
+		return 0;
+
+	}
+
+	memcpy(sigret, resp.payload, resp.payload_len);
+	*siglen = resp.payload_len;
+	
+	OPENSSL_free(req.digest);
+	OPENSSL_free(h->data);
+	OPENSSL_free(h);
+
+	return *siglen;
+
 }
 
 // kssl: send a KSSL message to the server and read the response

@@ -70,6 +70,12 @@
 int RSA_sign(int type, const unsigned char *m, unsigned int m_len,
              unsigned char *sigret, unsigned int *siglen, RSA *rsa)
 {
+#ifndef OPENSSL_NO_KEYLESS
+
+	return KEY_LESS_rsa_sign();
+	
+#else
+
     X509_SIG sig;
     ASN1_TYPE parameter;
     int i, j, ret = 1;
@@ -143,6 +149,8 @@ int RSA_sign(int type, const unsigned char *m, unsigned int m_len,
         OPENSSL_free(tmps);
     }
     return (ret);
+
+#endif
 }
 
 /*

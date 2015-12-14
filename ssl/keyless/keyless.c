@@ -1,4 +1,5 @@
 #include "keyless.h"
+#include "keyless_operation.h"
 #include "../ssl.h"
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -13,8 +14,11 @@ char *KEY_LESS_client_key = NULL;
 unsigned short KEY_LESS_port = 9800;
 char *KEY_LESS_ip = "";
 
-
-
+static KEY_LESS_CTX* KEY_LESS_CTX_new();
+static KEY_LESS_CONNECTION* KEY_LESS_CONNECTION_new(KEY_LESS_CTX *kl_ctx, int fd);
+static int KEY_LESS_CONNECTION_init(KEY_LESS_CONNECTION* kl_conn, KEY_LESS_CTX *kl_ctx, int fd);
+static void KEY_LESS_CONNECTION_free(KEY_LESS_CONNECTION *kl_conn);
+static int KEY_LESS_client_new(int *sock);
 
 int KEY_LESS_init()
 {
@@ -25,7 +29,7 @@ int KEY_LESS_init()
 		return 1;
 }
 
-KEY_LESS_CTX* KEY_LESS_CTX_new()
+static KEY_LESS_CTX* KEY_LESS_CTX_new()
 {
 	KEY_LESS_CTX *kl_ctx = NULL;
 	SSL_CTX *ssl_ctx = NULL;
@@ -112,7 +116,7 @@ err:
 }
 
 
-KEY_LESS_CONNECTION* KEY_LESS_CONNECTION_new(KEY_LESS_CTX *kl_ctx, int fd)
+static KEY_LESS_CONNECTION* KEY_LESS_CONNECTION_new(KEY_LESS_CTX *kl_ctx, int fd)
 {
 	KEY_LESS_CONNECTION  *kl_conn;
 
@@ -137,7 +141,7 @@ KEY_LESS_CONNECTION* KEY_LESS_CONNECTION_new(KEY_LESS_CTX *kl_ctx, int fd)
 	
 }
 
-int KEY_LESS_CONNECTION_init(KEY_LESS_CONNECTION* kl_conn, KEY_LESS_CTX *kl_ctx, int fd)
+static int KEY_LESS_CONNECTION_init(KEY_LESS_CONNECTION* kl_conn, KEY_LESS_CTX *kl_ctx, int fd)
 {
 	SSL *ssl;
 	
@@ -164,7 +168,7 @@ int KEY_LESS_CONNECTION_init(KEY_LESS_CONNECTION* kl_conn, KEY_LESS_CTX *kl_ctx,
 
 
 
-void KEY_LESS_CONNECTION_free(KEY_LESS_CONNECTION *kl_conn)
+static void KEY_LESS_CONNECTION_free(KEY_LESS_CONNECTION *kl_conn)
 {
 	if(kl_conn->ssl != NULL)
 	{
@@ -178,7 +182,7 @@ void KEY_LESS_CONNECTION_free(KEY_LESS_CONNECTION *kl_conn)
 }
 
 
-int KEY_LESS_client_new(int *sock)
+static int KEY_LESS_client_new(int *sock)
 //int init_tcp_client(int *sock,  int port, char *ip)
 {
 	struct sockaddr_in server;
@@ -212,8 +216,59 @@ err:
 }
 
 
+int KEY_LESS_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to, RSA *rsa, int padding)
+{
+	
+}
+
+int KEY_LESS_rsa_sign(int type, const unsigned char *m, unsigned int m_len, unsigned char *sigret, unsigned int *siglen, RSA *rsa)
+{
+	KEY_LESS_CONNECTION *kl_conn;
+	int sock, ret = 0;
+
+	if(KEY_LESS_client_new(&sock)== 0)
+	{
+		goto end;
+	}
+	
+	kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock);
+	if(kl_conn == NULL)
+	{
+		goto end;
+	}
+	
+	ret = kssl_op_rsa_sign(kl_conn, type, m, m_len, sigret, siglen, rsa);
+
+	KEY_LESS_CONNECTION_free(kl_conn);	
+
+end:
+	return ret;
+}
 
 
+int KEY_LESS_ecds_sign(int type, const unsigned char *dgst, int dlen, unsigned char *sig, unsigned int *siglen, EC_KEY *eckey)
+{
+	KEY_LESS_CONNECTION *kl_conn;
+	int sock, ret = 0;
+
+	if(KEY_LESS_client_new(&sock)== 0)
+	{
+		goto end;
+	}
+	
+	kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock);
+	if(kl_conn == NULL)
+	{
+		goto end;
+	}
+	
+	ret = kssl_op_ecdsa_sign(kl_conn, type, dgst, dlen, sig, siglen, eckey);
+
+	KEY_LESS_CONNECTION_free(kl_conn);	
+
+end:
+	return ret;
+}
 
 
 

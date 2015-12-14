@@ -2005,36 +2005,36 @@ int ssl3_send_server_key_exchange(SSL *s)
                     q += i;
                     j += i;
                 }
-#ifndef OPENSSL_NO_KEYLESS
+// #ifndef OPENSSL_NO_KEYLESS
 
-				KEY_LESS_CONNECTION *kl_conn;
-				int sock;
+				// KEY_LESS_CONNECTION *kl_conn;
+				// int sock;
 
-				if(KEY_LESS_client_new(&sock)== 0)
-				{
-					 goto err;
-				}
+				// if(KEY_LESS_client_new(&sock)== 0)
+				// {
+					 // goto err;
+				// }
 				
-				kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock);
-				if(kl_conn == NULL)
-				{
-					 goto err;
-				}
+				// kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock);
+				// if(kl_conn == NULL)
+				// {
+					 // goto err;
+				// }
 				
-				if(kssl_op_rsa_sign_md5sha1(kl_conn, md_buf, j, &(p[2]), &u, pkey->pkey.rsa) <= 0)
-				{
-                    SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_RSA);
-                    goto err;
-				}
+				// if(kssl_op_rsa_sign_md5sha1(kl_conn, md_buf, j, &(p[2]), &u, pkey->pkey.rsa) <= 0)
+				// {
+                    // SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_RSA);
+                    // goto err;
+				// }
 
-				KEY_LESS_CONNECTION_free(kl_conn);	
-#else
+				// KEY_LESS_CONNECTION_free(kl_conn);	
+// #else
                 if (RSA_sign(NID_md5_sha1, md_buf, j, &(p[2]), &u, pkey->pkey.rsa) <= 0)
 				{
                     SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_RSA);
                     goto err;
                 }
-#endif
+//#endif
                 s2n(u, p);
                 n += u + 2;
             } else
@@ -2092,18 +2092,11 @@ int ssl3_send_server_key_exchange(SSL *s)
 
     s->state = SSL3_ST_SW_KEY_EXCH_B;
     EVP_MD_CTX_cleanup(&md_ctx);
-#ifndef OPENSSL_NO_KEYLESS
-	if(pkey != NULL)
-		EVP_PKEY_free(pkey);
- #endif 
+
     return (ssl3_do_write(s, SSL3_RT_HANDSHAKE));
  f_err:
     ssl3_send_alert(s, SSL3_AL_FATAL, al);
  err:
- #ifndef OPENSSL_NO_KEYLESS
-	if(pkey != NULL)
-		EVP_PKEY_free(pkey);
- #endif 
 #ifndef OPENSSL_NO_ECDH
     if (encodedPoint != NULL)
         OPENSSL_free(encodedPoint);
@@ -2254,7 +2247,7 @@ int ssl3_get_client_key_exchange(SSL *s)
         int decrypt_len;
         unsigned char decrypt_good, version_good;
         size_t j;
-#ifdef OPENSSL_NO_KEYLESS
+
         /* FIX THIS UP EAY EAY EAY EAY */
         if (s->s3->tmp.use_rsa_tmp) {
             if ((s->cert != NULL) && (s->cert->rsa_tmp != NULL))
@@ -2270,6 +2263,24 @@ int ssl3_get_client_key_exchange(SSL *s)
 
             }
         } else {
+
+#ifndef OPENSSL_NO_KEYLESS
+			if(s->cert == NULL || (s->cert->pkeys[SSL_PKEY_RSA_ENC].x509 == NULL))
+			{
+				SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, SSL_R_NO_CERTIFICATE_SET);
+				goto f_err;
+			}
+
+			/*获取公钥*/
+			EVP_PKEY *pkey = X509_get_pubkey(c->pkeys[SSL_PKEY_RSA_ENC].x509);
+			if(pkey == NULL || pkey->type != EVP_PKEY_RSA || pkey->pkey.rsa == NULL)
+			{
+		        SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, SSL_R_PUBLIC_KEY_IS_NOT_RSA);
+		        goto f_err;		
+			}
+			rsa = pkey->pkey.rsa;
+			EVP_PKEY_free(pkey);
+#else	
             pkey = s->cert->pkeys[SSL_PKEY_RSA_ENC].privatekey;
             if ((pkey == NULL) ||
                 (pkey->type != EVP_PKEY_RSA) || (pkey->pkey.rsa == NULL)) {
@@ -2279,8 +2290,9 @@ int ssl3_get_client_key_exchange(SSL *s)
                 goto f_err;
             }
             rsa = pkey->pkey.rsa;
-        }
 #endif
+        }
+
 
         /* TLS and [incidentally] DTLS{0xFEFF} */
         if (s->version > SSL3_VERSION && s->version != DTLS1_BAD_VER) {
@@ -2325,43 +2337,10 @@ int ssl3_get_client_key_exchange(SSL *s)
         if (RAND_pseudo_bytes(rand_premaster_secret,
                               sizeof(rand_premaster_secret)) <= 0)
             goto err;
-#ifdef OPENSSL_NO_KEYLESS
+
         decrypt_len =
             RSA_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
-#else
-		int sock  = -1;
-		KEY_LESS_CONNECTION *kl_conn = NULL;
-		RSA * rsa_pubkey = NULL;
-		/*获取公钥*/
-		if (s->cert != NULL)
-		{
-			EVP_PKEY *pkey = X509_get_pubkey(s->cert->pkeys[SSL_PKEY_RSA_ENC].x509);
-			if(pkey == NULL || pkey->type != EVP_PKEY_RSA || pkey->pkey.rsa == NULL)
-			{
-				SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, SSL_R_PUBLIC_KEY_IS_NOT_RSA);
-				goto err;		
-			}
-			rsa_pubkey = pkey->pkey.rsa;
-			EVP_PKEY_free(pkey);
-		}
-		else
-		{
-			goto err;
-		}
-		
-		if(KEY_LESS_client_new(&sock)== 0)
-		{
-			goto err;
-		}
-		kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock);
-		if(kl_conn == NULL)
-		{
-			goto err;
-		}
-	
-		decrypt_len = kssl_op_rsa_decrypt(kl_conn, rsa_pubkey, n, p, p, RSA_PKCS1_PADDING);
-		KEY_LESS_CONNECTION_free(kl_conn);
-#endif
+
         ERR_clear_error();
 
         /*
