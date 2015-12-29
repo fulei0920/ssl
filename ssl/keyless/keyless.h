@@ -2,6 +2,7 @@
 #define __KEYLESS_H__
 
 #include <openssl/ossl_typ.h>
+#include <openssl/ec.h>
 
 typedef struct
 {

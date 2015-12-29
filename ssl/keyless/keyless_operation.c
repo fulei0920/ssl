@@ -1,8 +1,8 @@
 //#include "crypto.h"
-#include "ossl_typ.h"
+#include "keyless_operation.h"
+#include "ossl_typ.h"
 #include <openssl/ssl.h>
 #include <openssl/rsa.h>
-#include <openssl/ec.h>
 //#include "keyless.h"
 #include "kssl.h"
 #include "kssl_helpers.h"
@@ -26,11 +26,11 @@ static BYTE rsa_digest_nid_to_opcode(int digest_nid)
 			return KSSL_OP_RSA_SIGN_SHA1; 
 		case NID_sha224:
 			return KSSL_OP_RSA_SIGN_SHA224;
-		case NID_sha256
+		case NID_sha256:
 			return KSSL_OP_RSA_SIGN_SHA256;
-		case NID_sha384
+		case NID_sha384:
 			return KSSL_OP_RSA_SIGN_SHA384;
-		case NID_sha512
+		case NID_sha512:
 			return KSSL_OP_RSA_SIGN_SHA512;
 	}
 
@@ -47,11 +47,11 @@ static BYTE ecdsa_digest_nid_to_opcode(int digest_nid)
 			return KSSL_OP_ECDSA_SIGN_SHA1; 
 		case NID_sha224:
 			return KSSL_OP_ECDSA_SIGN_SHA224;
-		case NID_sha256
+		case NID_sha256:
 			return KSSL_OP_ECDSA_SIGN_SHA256;
-		case NID_sha384
+		case NID_sha384:
 			return KSSL_OP_ECDSA_SIGN_SHA384;
-		case NID_sha512
+		case NID_sha512:
 			return KSSL_OP_ECDSA_SIGN_SHA512;
 	}
 

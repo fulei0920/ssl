@@ -2272,7 +2272,7 @@ int ssl3_get_client_key_exchange(SSL *s)
 			}
 
 			/*»ñÈ¡¹«Ô¿*/
-			EVP_PKEY *pkey = X509_get_pubkey(c->pkeys[SSL_PKEY_RSA_ENC].x509);
+			pkey = X509_get_pubkey(s->cert->pkeys[SSL_PKEY_RSA_ENC].x509);
 			if(pkey == NULL || pkey->type != EVP_PKEY_RSA || pkey->pkey.rsa == NULL)
 			{
 		        SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, SSL_R_PUBLIC_KEY_IS_NOT_RSA);

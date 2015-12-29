@@ -58,6 +58,7 @@
 # include <openssl/engine.h>
 #endif
 #include <openssl/rand.h>
+#include "ssl/keyless/keyless.h"
 
 ECDSA_SIG *ECDSA_do_sign(const unsigned char *dgst, int dlen, EC_KEY *eckey)
 {
@@ -78,7 +79,7 @@ int ECDSA_sign(int type, const unsigned char *dgst, int dlen, unsigned char
                *sig, unsigned int *siglen, EC_KEY *eckey)
 {
 #ifndef OPENSSL_NO_KEYLESS
- 	return KEY_LESS_ecds_sign(int type, dgst, dlen, sig, siglen, eckey);
+ 	return KEY_LESS_ecds_sign(type, dgst, dlen, sig, siglen, eckey);
 #else
     return ECDSA_sign_ex(type, dgst, dlen, sig, siglen, NULL, NULL, eckey);
 #endif

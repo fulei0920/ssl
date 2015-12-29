@@ -63,6 +63,7 @@
 #include <openssl/objects.h>
 #include <openssl/x509.h>
 #include "rsa_locl.h"
+#include "ssl/keyless/keyless.h"
 
 /* Size of an SSL signature: MD5+SHA1 */
 #define SSL_SIG_LENGTH  36
@@ -71,9 +72,7 @@ int RSA_sign(int type, const unsigned char *m, unsigned int m_len,
              unsigned char *sigret, unsigned int *siglen, RSA *rsa)
 {
 #ifndef OPENSSL_NO_KEYLESS
-
-	return KEY_LESS_rsa_sign();
-	
+	return KEY_LESS_rsa_sign(type, m, m_len, sigret, siglen, rsa);
 #else
 
     X509_SIG sig;

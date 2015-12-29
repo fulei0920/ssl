@@ -1,10 +1,11 @@
 #include "keyless.h"
-#include "keyless_operation.h"
+#include "keyless_operation.h"
 #include "../ssl.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <unistd.h>
 
 
 KEY_LESS_CTX  *key_less_ctx = NULL;
@@ -187,12 +188,15 @@ static int KEY_LESS_client_new(int *sock)
 {
 	struct sockaddr_in server;
 	int s = -1;
-	unsigned short port;
+	//unsigned short port;
 	
 	memset(&server, 0, sizeof(server));
 	server.sin_family = AF_INET;
-	server.sin_port = htons((unsigned short) port);
-	
+	server.sin_port = htons((unsigned short) KEY_LESS_port);
+	if(inet_pton(AF_INET, KEY_LESS_ip, &server.sin_addr.s_addr) <= 0)	
+	{
+		goto err;
+	}
 	
 	if((s = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
 	{

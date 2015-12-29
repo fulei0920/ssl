@@ -31,7 +31,7 @@ LIBSRC=	\
 	ssl_ciph.c ssl_stat.c ssl_rsa.c \
 	ssl_asn1.c ssl_txt.c ssl_algs.c \
 	bio_ssl.c ssl_err.c kssl.c tls_srp.c t1_reneg.c ssl_utst.c \
-	keyless/keyless.c keyless/keyless_operation.c keyless/kssl_helpers.c 
+	keyless/keyless.c  keyless/keyless_operation.c  keyless/kssl_helpers.c
 	
 LIBOBJ= \
 	s2_meth.o  s2_srvr.o  s2_clnt.o  s2_lib.o  s2_enc.o s2_pkt.o \
@@ -44,12 +44,13 @@ LIBOBJ= \
 	ssl_ciph.o ssl_stat.o ssl_rsa.o \
 	ssl_asn1.o ssl_txt.o ssl_algs.o \
 	bio_ssl.o ssl_err.o kssl.o tls_srp.o t1_reneg.o ssl_utst.o\
-	keyless/keyless.o keyless/keyless_operation.o keyless/kssl_helpers.o
+	keyless/keyless.o  keyless/keyless_operation.o  keyless/kssl_helpers.o
 
 SRC= $(LIBSRC)
 
-EXHEADER= ssl.h ssl2.h ssl3.h ssl23.h tls1.h dtls1.h kssl.h srtp.h \
-		keyless.h  keyless_operation.h  kssl.h  kssl_helpers.h
+EXHEADER= ssl.h ssl2.h ssl3.h ssl23.h tls1.h dtls1.h kssl.h srtp.h  \
+	  keyless/keyless.h  keyless/keyless_operation.h  keyless/kssl.h  keyless/kssl_helpers.h
+
 HEADER=	$(EXHEADER) ssl_locl.h kssl_lcl.h
 
 ALL=    $(GENERAL) $(SRC) $(HEADER)

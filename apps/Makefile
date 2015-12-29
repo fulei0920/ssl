@@ -88,7 +88,7 @@ req: sreq.o $(A_OBJ) $(DLIBCRYPTO)
 	fi; \
 	$(MAKE) -f $(TOP)/Makefile.shared -e \
 		APPNAME=req OBJECTS="sreq.o $(A_OBJ) $(RAND_OBJ)" \
-		LIBDEPS="$(PEX_LIBS) $(LIBCRYPTO) $(EX_LIBS)" \
+		LIBDEPS="$(PEX_LIBS) $(LIBSSL) $(LIBCRYPTO) $(EX_LIBS)" \
 		link_app.$${shlib_target}
 
 sreq.o: req.c 

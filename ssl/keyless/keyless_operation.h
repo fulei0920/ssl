@@ -1,7 +1,8 @@
 #ifndef __KEYLESS_OPERATION_H__
 #define __KEYLESS_OPERATION_H__
 
-
+#include <openssl/ossl_typ.h>
+#include <openssl/ec.h>
 typedef struct 
 {
 	SSL_CTX *ssl_ctx;
