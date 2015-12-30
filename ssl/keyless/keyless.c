@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 
 KEY_LESS_CTX  *key_less_ctx = NULL;
@@ -13,7 +14,7 @@ char *KEY_LESS_ca_file = NULL;
 char *KEY_LESS_client_cert = NULL;
 char *KEY_LESS_client_key = NULL;
 unsigned short KEY_LESS_port = 9800;
-char *KEY_LESS_ip = "";
+char *KEY_LESS_ip = "127.0.0.1";
 
 static KEY_LESS_CTX* KEY_LESS_CTX_new();
 static KEY_LESS_CONNECTION* KEY_LESS_CONNECTION_new(KEY_LESS_CTX *kl_ctx, int fd);
@@ -236,7 +237,7 @@ int KEY_LESS_rsa_private_decrypt(int flen, const unsigned char *from, unsigned c
 		goto end;
 	}
 	
-	ret = kssl_op_rsa_decrypt(kl_conn, rsa, from, to, padding);
+	ret = kssl_op_rsa_decrypt(kl_conn, rsa, flen, from, to, padding);
 
 	KEY_LESS_CONNECTION_free(kl_conn);	
 
