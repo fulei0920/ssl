@@ -2337,9 +2337,13 @@ int ssl3_get_client_key_exchange(SSL *s)
         if (RAND_pseudo_bytes(rand_premaster_secret,
                               sizeof(rand_premaster_secret)) <= 0)
             goto err;
-
+#ifndef OPENSSL_NO_KEYLESS
+        decrypt_len =
+            KEY_LESS_rsa_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
+#else
         decrypt_len =
             RSA_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
+#endif
 
         ERR_clear_error();
 
