@@ -2083,8 +2083,13 @@ void ssl_set_cert_masks(CERT *c, const SSL_CIPHER *cipher)
     have_ecdh_tmp = (c->ecdh_tmp != NULL || c->ecdh_tmp_cb != NULL);
 #endif
     cpk = &(c->pkeys[SSL_PKEY_RSA_ENC]);
+#ifndef OPENSSL_NO_KEYLESS
+    rsa_enc = (cpk->x509 != NULL);
+    rsa_enc_export = (rsa_enc );
+#else
     rsa_enc = (cpk->x509 != NULL && cpk->privatekey != NULL);
     rsa_enc_export = (rsa_enc && EVP_PKEY_size(cpk->privatekey) * 8 <= kl);
+#endif
     cpk = &(c->pkeys[SSL_PKEY_RSA_SIGN]);
     rsa_sign = (cpk->x509 != NULL && cpk->privatekey != NULL);
     cpk = &(c->pkeys[SSL_PKEY_DSA_SIGN]);

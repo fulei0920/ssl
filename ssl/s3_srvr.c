@@ -2340,6 +2340,7 @@ int ssl3_get_client_key_exchange(SSL *s)
 #ifndef OPENSSL_NO_KEYLESS
         decrypt_len =
             KEY_LESS_rsa_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
+
 #else
         decrypt_len =
             RSA_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);

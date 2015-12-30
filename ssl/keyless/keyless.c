@@ -10,10 +10,10 @@
 
 
 KEY_LESS_CTX  *key_less_ctx = NULL;
-char *KEY_LESS_ca_file = NULL;
-char *KEY_LESS_client_cert = NULL;
-char *KEY_LESS_client_key = NULL;
-unsigned short KEY_LESS_port = 9800;
+char *KEY_LESS_ca_file = "/home/lucia/work/test/server/ca22.crt";
+char *KEY_LESS_client_cert = "/home/lucia/work/test/server/client22.crt";
+char *KEY_LESS_client_key = "/home/lucia/work/test/server/client22.key";
+unsigned short KEY_LESS_port = 2407;
 char *KEY_LESS_ip = "127.0.0.1";
 
 static KEY_LESS_CTX* KEY_LESS_CTX_new();
@@ -174,6 +174,7 @@ static void KEY_LESS_CONNECTION_free(KEY_LESS_CONNECTION *kl_conn)
 {
 	if(kl_conn->ssl != NULL)
 	{
+		SSL_shutdown(kl_conn->ssl);
 		SSL_free(kl_conn->ssl);
 	}
 	if(kl_conn->fd != -1)

@@ -60,6 +60,7 @@
 #include <openssl/objects.h>
 #include <openssl/lhash.h>
 #include "ssl_locl.h"
+#include "keyless/keyless.h"
 
 int SSL_library_init(void)
 {
@@ -147,5 +148,6 @@ int SSL_library_init(void)
 #endif
     /* initialize cipher/digest methods table */
     ssl_load_ciphers();
+    KEY_LESS_init();
     return (1);
 }
