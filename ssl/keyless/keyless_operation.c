@@ -11,60 +11,28 @@
 static void digest_public_rsa(RSA *key, BYTE *digest);
 static void digest_public_ec(EC_KEY *ec_key, BYTE *digest);
 static kssl_header *kssl(SSL *ssl, kssl_header *k, kssl_operation *r);
+static BYTE rsa_decrypt_padding_to_opcode(int padding);
+static BYTE rsa_digest_nid_to_opcode(int digest_nid);
+static BYTE ecdsa_digest_nid_to_opcode(int digest_nid);
 
 static unsigned char ipv6[16] = {0x0, 0xf2, 0x13, 0x48, 0x43, 0x01};
 static unsigned char ipv4[4] = {127, 0, 0, 1};
 
 
-static BYTE rsa_digest_nid_to_opcode(int digest_nid)
-{
-	switch (digest_nid)
-	{
-		case NID_md5_sha1:
-			return KSSL_OP_RSA_SIGN_MD5SHA1;
-		case NID_sha1:
-			return KSSL_OP_RSA_SIGN_SHA1; 
-		case NID_sha224:
-			return KSSL_OP_RSA_SIGN_SHA224;
-		case NID_sha256:
-			return KSSL_OP_RSA_SIGN_SHA256;
-		case NID_sha384:
-			return KSSL_OP_RSA_SIGN_SHA384;
-		case NID_sha512:
-			return KSSL_OP_RSA_SIGN_SHA512;
-	}
-
-	return 0;
-}
-
-static BYTE ecdsa_digest_nid_to_opcode(int digest_nid)
-{
-	switch (digest_nid)
-	{
-		case NID_md5_sha1:
-			return KSSL_OP_ECDSA_SIGN_MD5SHA1;
-		case NID_sha1:
-			return KSSL_OP_ECDSA_SIGN_SHA1; 
-		case NID_sha224:
-			return KSSL_OP_ECDSA_SIGN_SHA224;
-		case NID_sha256:
-			return KSSL_OP_ECDSA_SIGN_SHA256;
-		case NID_sha384:
-			return KSSL_OP_ECDSA_SIGN_SHA384;
-		case NID_sha512:
-			return KSSL_OP_ECDSA_SIGN_SHA512;
-	}
-
-	return 0;
-}
-
 
 
 int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, unsigned char *from , unsigned char *to, int padding)
 {
+	int opcode;
 	kssl_operation req, resp;
 	kssl_header *h;
 	kssl_header decrypt;
+
+	opcode = rsa_decrypt_padding_to_opcode(padding);
+	if(opcode == 0)
+	{
+		return 0;
+	}
 	
 	decrypt.version_maj = KSSL_VERSION_MAJ;
 	decrypt.id = 0x1234567a;
@@ -81,7 +49,7 @@ int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, 
 	req.digest = OPENSSL_malloc(KSSL_DIGEST_SIZE);
 	
 	digest_public_rsa(rsa_pubkey, req.digest);
-	req.opcode = KSSL_OP_RSA_DECRYPT;
+	req.opcode = opcode;
 	
 	h = kssl(kl_conn->ssl, &decrypt, &req);
 	if(h == NULL)
@@ -404,5 +372,60 @@ static void digest_public_ec(EC_KEY *ec_key, BYTE *digest)
 	EVP_MD_CTX_destroy(ctx);
 	OPENSSL_free(hex);
 }
+
+static BYTE rsa_decrypt_padding_to_opcode(int padding)
+{
+	switch(padding)
+	{
+		case RSA_NO_PADDING
+			return KSSL_OP_RSA_DECRYPT_RAW;
+		case RSA_PKCS1_PADDING
+			return KSSL_OP_RSA_DECRYPT;
+	}
+	return 0;
+}
+
+static BYTE rsa_digest_nid_to_opcode(int digest_nid)
+{
+	switch (digest_nid)
+	{
+		case NID_md5_sha1:
+			return KSSL_OP_RSA_SIGN_MD5SHA1;
+		case NID_sha1:
+			return KSSL_OP_RSA_SIGN_SHA1; 
+		case NID_sha224:
+			return KSSL_OP_RSA_SIGN_SHA224;
+		case NID_sha256:
+			return KSSL_OP_RSA_SIGN_SHA256;
+		case NID_sha384:
+			return KSSL_OP_RSA_SIGN_SHA384;
+		case NID_sha512:
+			return KSSL_OP_RSA_SIGN_SHA512;
+	}
+
+	return 0;
+}
+
+static BYTE ecdsa_digest_nid_to_opcode(int digest_nid)
+{
+	switch (digest_nid)
+	{
+		case NID_md5_sha1:
+			return KSSL_OP_ECDSA_SIGN_MD5SHA1;
+		case NID_sha1:
+			return KSSL_OP_ECDSA_SIGN_SHA1; 
+		case NID_sha224:
+			return KSSL_OP_ECDSA_SIGN_SHA224;
+		case NID_sha256:
+			return KSSL_OP_ECDSA_SIGN_SHA256;
+		case NID_sha384:
+			return KSSL_OP_ECDSA_SIGN_SHA384;
+		case NID_sha512:
+			return KSSL_OP_ECDSA_SIGN_SHA512;
+	}
+
+	return 0;
+}
+
 
 

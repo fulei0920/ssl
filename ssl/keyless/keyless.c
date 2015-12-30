@@ -222,7 +222,26 @@ err:
 
 int KEY_LESS_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to, RSA *rsa, int padding)
 {
+	KEY_LESS_CONNECTION *kl_conn;
+	int sock, ret = 0;
+
+	if(KEY_LESS_client_new(&sock)== 0)
+	{
+		goto end;
+	}
 	
+	kl_conn = KEY_LESS_CONNECTION_new(key_less_ctx, sock);
+	if(kl_conn == NULL)
+	{
+		goto end;
+	}
+	
+	ret = kssl_op_rsa_decrypt(kl_conn, rsa, from, to, padding);
+
+	KEY_LESS_CONNECTION_free(kl_conn);	
+
+end:
+	return ret;
 }
 
 int KEY_LESS_rsa_sign(int type, const unsigned char *m, unsigned int m_len, unsigned char *sigret, unsigned int *siglen, RSA *rsa)

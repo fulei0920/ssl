@@ -1198,12 +1198,16 @@ static int ssl_rsa_private_decrypt(CERT *c, int len, unsigned char *from,
     rsa = c->pkeys[SSL_PKEY_RSA_ENC].privatekey->pkey.rsa;
 #endif
 
+#ifndef OPENSSL_NO_KEYLESS
+	i = KEY_LESS_rsa_private_decrypt(len, from, to, rsa, padding);
+#else
     /* we have the public key */
     i = RSA_private_decrypt(len, from, to, rsa, padding);
+#endif
     if (i < 0)
         SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, ERR_R_RSA_LIB);
     return (i);
-//#endif
+
 }
 #else                           /* !OPENSSL_NO_SSL2 */
 
