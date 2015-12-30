@@ -79,7 +79,7 @@ int kssl_op_rsa_decrypt(KEY_LESS_CONNECTION *kl_conn, RSA *rsa_pubkey, int len, 
 int kssl_op_rsa_sign(KEY_LESS_CONNECTION *kl_conn, int type, const unsigned char *m, unsigned int m_len,
              unsigned char *sigret, unsigned int *siglen, RSA *rsa_pubkey)
 {
-	int i, rc, len, opcode;
+	int opcode;
 	kssl_header *h;
 	kssl_header sign;
 	kssl_operation req, resp;
@@ -101,7 +101,7 @@ int kssl_op_rsa_sign(KEY_LESS_CONNECTION *kl_conn, int type, const unsigned char
 	//req.ip_len = 4;
 	req.digest = OPENSSL_malloc(KSSL_DIGEST_SIZE);
 	digest_public_rsa(rsa_pubkey, req.digest);
-	req.payload = m;
+	req.payload = (BYTE*)m;
 	req.payload_len = m_len;
 	req.opcode = opcode;
 
@@ -135,7 +135,7 @@ int kssl_op_rsa_sign(KEY_LESS_CONNECTION *kl_conn, int type, const unsigned char
 int kssl_op_ecdsa_sign(KEY_LESS_CONNECTION *kl_conn, int type, const unsigned char *m, unsigned int m_len,
              unsigned char *sigret, unsigned int *siglen, EC_KEY *ecdsa_pubkey)
 {
-	int i, rc, len, opcode;
+	int opcode;
 	kssl_header *h;
 	kssl_header sign;
 	kssl_operation req, resp;
@@ -377,9 +377,9 @@ static BYTE rsa_decrypt_padding_to_opcode(int padding)
 {
 	switch(padding)
 	{
-		case RSA_NO_PADDING
+		case RSA_NO_PADDING:
 			return KSSL_OP_RSA_DECRYPT_RAW;
-		case RSA_PKCS1_PADDING
+		case RSA_PKCS1_PADDING:
 			return KSSL_OP_RSA_DECRYPT;
 	}
 	return 0;
