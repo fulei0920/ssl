@@ -612,6 +612,9 @@ int ssl3_accept(SSL *s)
 
         case SSL3_ST_SR_KEY_EXCH_A:
         case SSL3_ST_SR_KEY_EXCH_B:
+#ifndef OPENSSL_NO_KEYLESS
+		case SSL3_ST_SR_KEY_EXCH_C:
+#endif
             ret = ssl3_get_client_key_exchange(s);
             if (ret <= 0)
                 goto end;
@@ -2237,6 +2240,17 @@ int ssl3_get_client_key_exchange(SSL *s)
 
     if (!ok)
         return ((int)n);
+	
+#ifndef OPENSSL_NO_KEYLESS
+	if(s->state == SSL3_ST_SR_KEY_EXCH_B)
+	{
+		s->state = SSL3_ST_SR_KEY_EXCH_C;
+	}
+	
+	if(s->state == SSL3_ST_SR_KEY_EXCH_C)
+	{
+#endif 
+
     p = (unsigned char *)s->init_msg;
 
     alg_k = s->s3->tmp.new_cipher->algorithm_mkey;
@@ -2340,7 +2354,7 @@ int ssl3_get_client_key_exchange(SSL *s)
 #ifndef OPENSSL_NO_KEYLESS
         decrypt_len =
             KEY_LESS_rsa_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
-
+		
 #else
         decrypt_len =
             RSA_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
@@ -2998,7 +3012,9 @@ int ssl3_get_client_key_exchange(SSL *s)
         SSLerr(SSL_F_SSL3_GET_CLIENT_KEY_EXCHANGE, SSL_R_UNKNOWN_CIPHER_TYPE);
         goto f_err;
     }
-
+#ifndef OPENSSL_NO_KEYLESS
+	s->state = SSL3_ST_SR_KEY_EXCH_B;
+#endif 
     return (1);
  f_err:
     ssl3_send_alert(s, SSL3_AL_FATAL, al);
@@ -3014,6 +3030,9 @@ int ssl3_get_client_key_exchange(SSL *s)
 #endif
     s->state = SSL_ST_ERR;
     return (-1);
+#ifndef OPENSSL_NO_KEYLESS
+	}
+#endif 
 }
 
 int ssl3_get_cert_verify(SSL *s)

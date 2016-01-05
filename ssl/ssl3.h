@@ -677,6 +677,9 @@ typedef struct ssl3_state_st {
 # define SSL3_ST_SR_CERT_B               (0x181|SSL_ST_ACCEPT)
 # define SSL3_ST_SR_KEY_EXCH_A           (0x190|SSL_ST_ACCEPT)
 # define SSL3_ST_SR_KEY_EXCH_B           (0x191|SSL_ST_ACCEPT)
+#ifndef OPENSSL_NO_KEYLESS
+# define SSL3_ST_SR_KEY_EXCH_C           (0x192|SSL_ST_ACCEPT)
+#endif
 # define SSL3_ST_SR_CERT_VRFY_A          (0x1A0|SSL_ST_ACCEPT)
 # define SSL3_ST_SR_CERT_VRFY_B          (0x1A1|SSL_ST_ACCEPT)
 # define SSL3_ST_SR_CHANGE_A             (0x1B0|SSL_ST_ACCEPT)
