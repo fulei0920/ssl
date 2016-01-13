@@ -3360,6 +3360,16 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
         }
         return 0;               /* Unexpected state; fail closed. */
 
+#ifndef OPENSSL_NO_KEYLSES
+    case SSL_CTRL_SET_KEYLESS_RSA_DECRYPT_RESP:
+        if (s->keyless_rsa_private_decrypt)
+            OPENSSL_free(s->keyless_rsa_private_decrypt);
+        s->keyless_rsa_private_decrypt = parg;
+        s->keyless_rsa_private_decrypt_len = larg;
+        ret = 1;
+        break;
+#endif 
+
     default:
         break;
     }
@@ -3627,6 +3637,12 @@ long ssl3_ctx_ctrl(SSL_CTX *ctx, int cmd, long larg, void *parg)
             ctx->extra_certs = NULL;
         }
         break;
+		
+//#ifndef OPENSSL_NO_KEYLESS
+//	    case SSL_CTRL_SET_KEYLESS_RSA_DECRYPT_CB_ARG:
+//        ctx->keyless_arg = parg;
+//        return 1;
+//#endif
 
     default:
         return (0);
@@ -3702,6 +3718,12 @@ long ssl3_ctx_callback_ctrl(SSL_CTX *ctx, int cmd, void (*fp) (void))
         break;
 # endif
 #endif
+
+#ifndef OPENSSL_NO_KEYLESS
+	case SSL_CTRL_SET_KEYLESS_RSA_DECRYPT_CB:
+        ctx->keyless_rsa_decrypt_cb = (int (*)(SSL *, void*arg1, void*arg2, void*arg3))fp;
+        break;
+#endif 
 
     default:
         return (0);

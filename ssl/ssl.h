@@ -1043,6 +1043,11 @@ struct ssl_ctx_st {
     /* SRTP profiles we are willing to do from RFC 5764 */
     STACK_OF(SRTP_PROTECTION_PROFILE) *srtp_profiles;
 #  endif
+
+#  ifndef OPENSSL_NO_KEYLESS 
+    int (*keyless_rsa_private_decrypt_cb) (SSL *ssl, void *arg1, void *arg2, void*arg3);
+    //void *keyless_rsa_private_decrypt_cb_arg;
+#  endif
 };
 
 # endif
@@ -1502,6 +1507,11 @@ struct ssl_st {
     /* ctx for SRP authentication */
     SRP_CTX srp_ctx;
 #  endif
+
+#ifndef OPENSSL_NO_KEYLESS
+	void *keyless_rsa_private_decrypt;
+    size_t keyless_rsa_private_decrypt_len;
+#endif
 };
 
 # endif
@@ -1724,6 +1734,12 @@ DECLARE_PEM_rw(SSL_SESSION, SSL_SESSION)
 # define SSL_CTRL_GET_MAX_CERT_LIST              50
 # define SSL_CTRL_SET_MAX_CERT_LIST              51
 # define SSL_CTRL_SET_MAX_SEND_FRAGMENT          52
+
+#ifndef OPENSSL_NO_KEYLESS
+#  define SSL_CTRL_SET_KEYLESS_RSA_DECRYPT_CB	 500
+#  define SSL_CTRL_SET_KEYLESS_RSA_DECRYPT_CB_ARG 501
+#  define SSL_CTRL_SET_KEYLESS_RSA_DECRYPT_RESP   502
+#endif 
 /* see tls1.h for macros based on these */
 # ifndef OPENSSL_NO_TLSEXT
 #  define SSL_CTRL_SET_TLSEXT_SERVERNAME_CB       53

@@ -612,9 +612,9 @@ int ssl3_accept(SSL *s)
 
         case SSL3_ST_SR_KEY_EXCH_A:
         case SSL3_ST_SR_KEY_EXCH_B:
-#ifndef OPENSSL_NO_KEYLESS
-		case SSL3_ST_SR_KEY_EXCH_C:
-#endif
+//#ifndef OPENSSL_NO_KEYLESS
+//		case SSL3_ST_SR_KEY_EXCH_C:
+//#endif
             ret = ssl3_get_client_key_exchange(s);
             if (ret <= 0)
                 goto end;
@@ -634,7 +634,8 @@ int ssl3_accept(SSL *s)
                     s->state = SSL3_ST_SR_FINISHED_A;
 #endif
                 s->init_num = 0;
-            } else if (TLS1_get_version(s) >= TLS1_2_VERSION) {
+            } 
+			else if (TLS1_get_version(s) >= TLS1_2_VERSION) {
                 s->state = SSL3_ST_SR_CERT_VRFY_A;
                 s->init_num = 0;
                 if (!s->session->peer)
@@ -653,7 +654,18 @@ int ssl3_accept(SSL *s)
                     s->state = SSL_ST_ERR;
                     return -1;
                 }
-            } else {
+            }
+#ifndef OPENSSL_NO_KEYLESS
+			else if(s->s3->tmp.new_cipher->algorithm_mkey & SSL_kRSA
+					&& (s->cert->pkeys[SSL_PKEY_RSA_ENC].privatekey == NULL && s->cert->pkeys[SSL_PKEY_RSA_ENC].x509 != NULL))
+			{
+				s->state = SSL3_ST_SR_CERT_VRFY_A;
+				s->init_num = 0;
+				ret = 3;
+				break;
+			}
+#endif
+			else {
                 int offset = 0;
                 int dgst_num;
 
@@ -694,10 +706,53 @@ int ssl3_accept(SSL *s)
                         offset += dgst_size;
                     }
             }
-            break;
-
+		break;
         case SSL3_ST_SR_CERT_VRFY_A:
         case SSL3_ST_SR_CERT_VRFY_B:
+#ifndef OPENSSL_NO_KEYLESS
+		if(s->state == SSL3_ST_SR_CERT_VRFY_A && s->s3->tmp.new_cipher->algorithm_mkey & SSL_kRSA && !(TLS1_get_version(s) >= TLS1_2_VERSION)
+			 && (s->cert->pkeys[SSL_PKEY_RSA_ENC].privatekey == NULL && s->cert->pkeys[SSL_PKEY_RSA_ENC].x509 != NULL))
+		{
+			
+            int offset = 0;
+            int dgst_num;
+            /*
+             * We need to get hashes here so if there is a client cert,
+             * it can be verified FIXME - digest processing for
+             * CertificateVerify should be generalized. But it is next
+             * step
+             */
+            if (s->s3->handshake_buffer) {
+                if (!ssl3_digest_cached_records(s)) {
+                    s->state = SSL_ST_ERR;
+                    return -1;
+                }
+            }
+            for (dgst_num = 0; dgst_num < SSL_MAX_DIGEST; dgst_num++)
+                if (s->s3->handshake_dgst[dgst_num]) {
+                    int dgst_size;
+
+                    s->method->ssl3_enc->cert_verify_mac(s,
+                                                         EVP_MD_CTX_type
+                                                         (s->
+                                                          s3->handshake_dgst
+                                                          [dgst_num]),
+                                                         &(s->s3->
+                                                           tmp.cert_verify_md
+                                                           [offset]));
+                    dgst_size =
+                        EVP_MD_CTX_size(s->s3->handshake_dgst[dgst_num]);
+                    if (dgst_size < 0) {
+                        s->state = SSL_ST_ERR;
+                        ret = -1;
+                        goto end;
+                    }
+                    offset += dgst_size;
+                }
+            
+		}
+
+#endif
             ret = ssl3_get_cert_verify(s);
             if (ret <= 0)
                 goto end;
@@ -2241,15 +2296,15 @@ int ssl3_get_client_key_exchange(SSL *s)
     if (!ok)
         return ((int)n);
 	
-#ifndef OPENSSL_NO_KEYLESS
-	if(s->state == SSL3_ST_SR_KEY_EXCH_B)
-	{
-		s->state = SSL3_ST_SR_KEY_EXCH_C;
-	}
+//#ifndef OPENSSL_NO_KEYLESS
+	//if(s->state == SSL3_ST_SR_KEY_EXCH_B)
+	//{
+		//s->state = SSL3_ST_SR_KEY_EXCH_C;
+	//}
 	
-	if(s->state == SSL3_ST_SR_KEY_EXCH_C)
-	{
-#endif 
+	//if(s->state == SSL3_ST_SR_KEY_EXCH_C)
+	//{
+//#endif 
 
     p = (unsigned char *)s->init_msg;
 
@@ -2276,16 +2331,10 @@ int ssl3_get_client_key_exchange(SSL *s)
                 goto f_err;
 
             }
-        } else {
-
+        }
 #ifndef OPENSSL_NO_KEYLESS
-			if(s->cert == NULL || (s->cert->pkeys[SSL_PKEY_RSA_ENC].x509 == NULL))
-			{
-				SSLerr(SSL_F_SSL_RSA_PRIVATE_DECRYPT, SSL_R_NO_CERTIFICATE_SET);
-				goto f_err;
-			}
-
-			/*获取公钥*/
+		else if(s->cert->pkeys[SSL_PKEY_RSA_ENC].privatekey == NULL && s->cert->pkeys[SSL_PKEY_RSA_ENC].x509 != NULL)
+		{
 			pkey = X509_get_pubkey(s->cert->pkeys[SSL_PKEY_RSA_ENC].x509);
 			if(pkey == NULL || pkey->type != EVP_PKEY_RSA || pkey->pkey.rsa == NULL)
 			{
@@ -2294,7 +2343,10 @@ int ssl3_get_client_key_exchange(SSL *s)
 			}
 			rsa = pkey->pkey.rsa;
 			EVP_PKEY_free(pkey);
-#else	
+		}
+#endif
+		else
+		{
             pkey = s->cert->pkeys[SSL_PKEY_RSA_ENC].privatekey;
             if ((pkey == NULL) ||
                 (pkey->type != EVP_PKEY_RSA) || (pkey->pkey.rsa == NULL)) {
@@ -2304,7 +2356,6 @@ int ssl3_get_client_key_exchange(SSL *s)
                 goto f_err;
             }
             rsa = pkey->pkey.rsa;
-#endif
         }
 
 
@@ -2337,6 +2388,26 @@ int ssl3_get_client_key_exchange(SSL *s)
             goto f_err;
         }
 
+
+#ifndef OPENSSL_NO_KEYLESS
+        //decrypt_len = KEY_LESS_rsa_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
+		if(s->cert->pkeys[SSL_PKEY_RSA_ENC].privatekey == NULL && s->cert->pkeys[SSL_PKEY_RSA_ENC].x509 != NULL)
+		{
+			if(s->ctx->keyless_rsa_private_decrypt_cb != NULL 
+				&& s->ctx->keyless_rsa_private_decrypt_cb(s, p, rsa, RSA_PKCS1_PADDING) == SSL_TLSEXT_ERR_OK)
+			{
+				return 1;
+			}
+
+			if (RAND_pseudo_bytes(rand_premaster_secret, sizeof(rand_premaster_secret)) <= 0)
+					goto err;
+				
+			decrypt_len = 0;	
+		}
+		else
+		{
+		
+#endif
         /*
          * We must not leak whether a decryption failure occurs because of
          * Bleichenbacher's attack on PKCS #1 v1.5 RSA padding (see RFC 2246,
@@ -2351,13 +2422,11 @@ int ssl3_get_client_key_exchange(SSL *s)
         if (RAND_pseudo_bytes(rand_premaster_secret,
                               sizeof(rand_premaster_secret)) <= 0)
             goto err;
-#ifndef OPENSSL_NO_KEYLESS
-        decrypt_len =
-            KEY_LESS_rsa_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
-		
-#else
+
         decrypt_len =
             RSA_private_decrypt((int)n, p, p, rsa, RSA_PKCS1_PADDING);
+#ifndef OPENSSL_NO_KEYLESS
+    	}
 #endif
 
         ERR_clear_error();
@@ -3012,9 +3081,10 @@ int ssl3_get_client_key_exchange(SSL *s)
         SSLerr(SSL_F_SSL3_GET_CLIENT_KEY_EXCHANGE, SSL_R_UNKNOWN_CIPHER_TYPE);
         goto f_err;
     }
-#ifndef OPENSSL_NO_KEYLESS
-	s->state = SSL3_ST_SR_KEY_EXCH_B;
-#endif 
+//#ifndef OPENSSL_NO_KEYLESS
+	//进行正常的状态跳转
+	//s->state = SSL3_ST_SR_KEY_EXCH_B;
+//#endif 
     return (1);
  f_err:
     ssl3_send_alert(s, SSL3_AL_FATAL, al);

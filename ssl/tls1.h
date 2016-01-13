@@ -366,6 +366,17 @@ SSL_CTX_ctrl(ctx,SSL_CTRL_SET_TLSEXT_OPAQUE_PRF_INPUT_CB_ARG, 0, arg)
 #  define SSL_CTX_set_tlsext_ticket_key_cb(ssl, cb) \
 SSL_CTX_callback_ctrl(ssl,SSL_CTRL_SET_TLSEXT_TICKET_KEY_CB,(void (*)(void))cb)
 
+
+#ifndef OPENSSL_NO_KEYLESS
+#  define SSL_CTX_set_keyless_ras_private_decrypt_cb(ssl, cb) \
+	SSL_CTX_callback_ctrl(ssl,SSL_CTRL_SET_KEYLESS_RSA_DECRYPT_CB,(void (*)(void))cb)
+#  define SSL_CTX_set_keyless_ras_private_decrypt_arg(ssl, arg) \
+	SSL_CTX_ctrl(ssl,SSL_CTRL_SET_KEYLESS_RSA_DECRYPT_CB_ARG,0, (void *)arg)
+#  define SSL_set_keyless_ras_private_decrypt_resp(ssl, arg, arglen) \
+	SSL_ctrl(ssl,SSL_CTRL_SET_KEYLESS_RSA_DECRYPT_RESP,arglen, (void *)arg)
+#endif
+
+
 #  ifndef OPENSSL_NO_HEARTBEATS
 #   define SSL_TLSEXT_HB_ENABLED                           0x01
 #   define SSL_TLSEXT_HB_DONT_SEND_REQUESTS        0x02
